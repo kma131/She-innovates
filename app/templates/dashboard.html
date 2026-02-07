@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Fair-Scan{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>Your Dashboard</h1>
+        <p>Welcome back, {{ current_user.email }}</p>
+        <a href="{{ url_for('main.upload') }}" class="btn btn-primary">+ Upload New Resume</a>
+    </div>
+
+    {% if resumes %}
+        <div class="resumes-grid">
+            {% for resume in resumes %}
+                <div class="resume-card">
+                    <div class="resume-card-header">
+                        <h3>{{ resume.original_filename }}</h3>
+                        <span class="resume-status status-{{ resume.processing_status }}">
+                            {{ resume.processing_status.capitalize() }}
+                        </span>
+                    </div>
+                    
+                    <div class="resume-card-body">
+                        <p class="resume-date">
+                            <strong>Uploaded:</strong> {{ resume.uploaded_at.strftime('%B %d, %Y at %I:%M %p') }}
+                        </p>
+                        
+                        {% if resume.extracted_skills %}
+                            <div class="skills-preview">
+                                <strong>Skills Found:</strong>
+                                <div class="skill-tags">
+                                    {% for skill in resume.extracted_skills.technical[:3] %}
+                                        <span class="skill-tag">{{ skill }}</span>
+                                    {% endfor %}
+                                    {% if resume.extracted_skills.technical|length > 3 %}
+                                        <span class="skill-tag">+{{ resume.extracted_skills.technical|length - 3 }} more</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="resume-card-footer">
+                        <a href="{{ url_for('main.view_resume', resume_id=resume.id) }}" class="btn btn-secondary btn-sm">View Details</a>
+                        <button class="btn btn-danger btn-sm" onclick="deleteResume({{ resume.id }})">Delete</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <h2>No resumes yet</h2>
+            <p>Upload your first resume to get started with Fair-Scan</p>
+            <a href="{{ url_for('main.upload') }}" class="btn btn-primary btn-lg">Upload Resume</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function deleteResume(resumeId) {
+    if (confirm('Are you sure you want to delete this resume?')) {
+        fetch(`/delete/${resumeId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting resume');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

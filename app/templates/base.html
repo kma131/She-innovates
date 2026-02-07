@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fair-Scan - Resume Anonymizer{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('main.index') }}" class="logo">
+                <span class="logo-icon">⚖️</span>
+                <span class="logo-text">Fair-Scan</span>
+            </a>
+            <ul class="nav-menu">
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('main.dashboard') }}" class="nav-link">Dashboard</a></li>
+                    <li><a href="{{ url_for('main.upload') }}" class="nav-link">Upload Resume</a></li>
+                    <li><a href="{{ url_for('auth.logout') }}" class="nav-link logout-btn">Logout</a></li>
+                    <li class="user-email">{{ current_user.email }}</li>
+                {% else %}
+                    <li><a href="{{ url_for('auth.login') }}" class="nav-link">Login</a></li>
+                    <li><a href="{{ url_for('auth.signup') }}" class="nav-link signup-btn">Sign Up</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                    <button class="alert-close" onclick="this.parentElement.style.display='none';">&times;</button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2026 Fair-Scan. Promoting fair and unbiased hiring practices through technology.</p>
+            <p class="footer-subtext">Your privacy is our priority. All resumes are anonymized and processed securely.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

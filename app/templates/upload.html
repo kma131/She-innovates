@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Resume - Fair-Scan{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="upload-section">
+        <div class="upload-header">
+            <h1>Upload Your Resume</h1>
+            <p>Upload a PDF resume to anonymize and extract key information</p>
+        </div>
+
+        <div class="upload-card">
+            <form id="uploadForm" class="upload-form" enctype="multipart/form-data">
+                <div class="file-input-wrapper" id="fileInputWrapper">
+                    <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <h3>Drag and drop your PDF here</h3>
+                    <p>or click to browse</p>
+                    <input 
+                        type="file" 
+                        id="fileInput" 
+                        name="file" 
+                        accept=".pdf" 
+                        required
+                        class="file-input"
+                    >
+                </div>
+
+                <div id="filePreview" class="file-preview hidden">
+                    <div class="file-preview-item">
+                        <span class="file-icon">📄</span>
+                        <div class="file-info">
+                            <p id="fileName" class="file-name"></p>
+                            <p id="fileSize" class="file-size"></p>
+                        </div>
+                        <button type="button" class="btn-remove" onclick="resetForm()">×</button>
+                    </div>
+                </div>
+
+                <div class="form-info">
+                    <p><strong>Requirements:</strong></p>
+                    <ul>
+                        <li>File must be in PDF format</li>
+                        <li>Maximum file size: 10 MB</li>
+                        <li>Results will be emailed to: <strong>{{ current_user.email }}</strong></li>
+                    </ul>
+                </div>
+
+                <div id="processingIndicator" class="processing-indicator hidden">
+                    <div class="spinner"></div>
+                    <p>Processing your resume...</p>
+                    <p class="processing-subtext">This may take a moment. Please don't close this window.</p>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-primary btn-block btn-lg">
+                    Process Resume
+                </button>
+            </form>
+        </div>
+
+        <div class="info-section">
+            <h3>What happens to your data?</h3>
+            <div class="info-cards">
+                <div class="info-card">
+                    <h4>🔒 Secure Processing</h4>
+                    <p>Your resume is processed using Google's Gemini API and then anonymized.</p>
+                </div>
+                <div class="info-card">
+                    <h4>📧 Email Delivery</h4>
+                    <p>Results are sent to your email address. You can view and manage them in your dashboard.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🗑️ Data Deletion</h4>
+                    <p>You can delete any processed resume from your dashboard at any time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const fileInputWrapper = document.getElementById('fileInputWrapper');
+const filePreview = document.getElementById('filePreview');
+const uploadForm = document.getElementById('uploadForm');
+const processingIndicator = document.getElementById('processingIndicator');
+const submitBtn = document.getElementById('submitBtn');
+
+// Drag and drop functionality
+fileInputWrapper.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    fileInputWrapper.classList.add('dragover');
+});
+
+fileInputWrapper.addEventListener('dragleave', () => {
+    fileInputWrapper.classList.remove('dragover');
+});
+
+fileInputWrapper.addEventListener('drop', (e) => {
+    e.preventDefault();
+    fileInputWrapper.classList.remove('dragover');
+    fileInput.files = e.dataTransfer.files;
+    updateFilePreview();
+});
+
+// File input change
+fileInput.addEventListener('change', updateFilePreview);
+
+function updateFilePreview() {
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = 
+            (file.size / 1024 / 1024).toFixed(2) + ' MB';
+        fileInputWrapper.classList.add('hidden');
+        filePreview.classList.remove('hidden');
+    }
+}
+
+function resetForm() {
+    fileInput.value = '';
+    fileInputWrapper.classList.remove('hidden');
+    filePreview.classList.add('hidden');
+}
+
+// Form submission
+uploadForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (fileInput.files.length === 0) {
+        alert('Please select a file');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    // Show processing indicator
+    submitBtn.disabled = true;
+    processingIndicator.classList.remove('hidden');
+
+    try {
+        const response = await fetch('{{ url_for("main.upload") }}', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showSuccess(data.message);
+            setTimeout(() => {
+                window.location.href = '{{ url_for("main.dashboard") }}';
+            }, 2000);
+        } else {
+            showError(data.error || 'An error occurred');
+            submitBtn.disabled = false;
+            processingIndicator.classList.add('hidden');
+        }
+    } catch (error) {
+        showError('Network error: ' + error.message);
+        submitBtn.disabled = false;
+        processingIndicator.classList.add('hidden');
+    }
+});
+
+function showSuccess(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success';
+    alert.textContent = message;
+    document.querySelector('main').insertBefore(alert, document.querySelector('.container'));
+}
+
+function showError(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-error';
+    alert.innerHTML = message + '<button class="alert-close" onclick="this.parentElement.remove();">&times;</button>';
+    document.querySelector('main').insertBefore(alert, document.querySelector('.container'));
+}
+</script>
+{% endblock %}

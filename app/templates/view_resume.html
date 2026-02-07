@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Resume Details - Fair-Scan{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="resume-details-header">
+        <div>
+            <h1>{{ resume.original_filename }}</h1>
+            <p class="metadata">Uploaded: {{ resume.uploaded_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+        </div>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+    </div>
+
+    <div class="resume-details-content">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="anonymized">Anonymized Resume</button>
+            <button class="tab-button" data-tab="skills">Skills & Experience</button>
+            <button class="tab-button" data-tab="original">Original Text</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Anonymized Resume Tab -->
+            <div id="anonymized" class="tab-pane active">
+                <div class="resume-text-box">
+                    <div class="tab-header">
+                        <h3>Anonymized Resume</h3>
+                        <p class="tab-subtext">This version has been anonymized to remove identifying information</p>
+                    </div>
+                    <div class="resume-text">
+                        {{ resume.anonymized_text }}
+                    </div>
+                    <button class="btn btn-secondary" onclick="copyToClipboard('anonymized-content')">Copy to Clipboard</button>
+                </div>
+            </div>
+
+            <!-- Skills & Experience Tab -->
+            <div id="skills" class="tab-pane">
+                <div class="skills-section">
+                    <div class="skills-card">
+                        <h3>📊 Experience Summary</h3>
+                        {% if resume.highlighted_experience %}
+                            <div class="info-block">
+                                <p><strong>Years of Experience:</strong> {{ resume.highlighted_experience.get('years_experience', 'Not specified') }}</p>
+                            </div>
+                            
+                            {% if resume.highlighted_experience.get('job_titles') %}
+                                <div class="info-block">
+                                    <strong>Job Titles</strong>
+                                    <ul>
+                                        {% for title in resume.highlighted_experience['job_titles'] %}
+                                            <li>{{ title }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    {% if resume.extracted_skills %}
+                        <div class="skills-card">
+                            <h3>💻 Technical Skills</h3>
+                            <div class="skill-tags-large">
+                                {% for skill in resume.extracted_skills.get('technical', []) %}
+                                    <span class="skill-tag-large skill-technical">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="skills-card">
+                            <h3>🤝 Soft Skills</h3>
+                            <div class="skill-tags-large">
+                                {% for skill in resume.extracted_skills.get('soft', []) %}
+                                    <span class="skill-tag-large skill-soft">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if resume.highlighted_experience.get('key_achievements') %}
+                        <div class="skills-card">
+                            <h3>⭐ Key Achievements</h3>
+                            <ul class="achievements-list">
+                                {% for achievement in resume.highlighted_experience['key_achievements'] %}
+                                    <li>{{ achievement }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Original Text Tab -->
+            <div id="original" class="tab-pane">
+                <div class="resume-text-box">
+                    <div class="tab-header">
+                        <h3>Original Resume Text</h3>
+                        <p class="tab-subtext warning">⚠️ This is your original, non-anonymized resume text</p>
+                    </div>
+                    <div class="resume-text">
+                        {{ resume.original_text }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="resume-actions">
+        <button class="btn btn-secondary" onclick="window.history.back()">← Back</button>
+        <button class="btn btn-danger" onclick="deleteResume({{ resume.id }})">🗑️ Delete Resume</button>
+    </div>
+</div>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        const tabName = button.getAttribute('data-tab');
+        
+        // Hide all tabs
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+        
+        // Remove active class from all buttons
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Show selected tab
+        document.getElementById(tabName).classList.add('active');
+        button.classList.add('active');
+    });
+});
+
+function copyToClipboard(elementId) {
+    const text = document.querySelector('#' + elementId).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Resume copied to clipboard!');
+    });
+}
+
+function deleteResume(resumeId) {
+    if (confirm('Are you sure you want to delete this resume? This cannot be undone.')) {
+        fetch(`/delete/${resumeId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.href = '{{ url_for("main.dashboard") }}';
+            } else {
+                alert('Error deleting resume');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

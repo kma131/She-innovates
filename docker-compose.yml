@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  fair-scan:
+    build: .
+    container_name: fair-scan
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - DATABASE_URL=sqlite:///fair_scan.db
+    volumes:
+      - ./uploads:/app/uploads
+      - ./fair_scan.db:/app/fair_scan.db
+    restart: unless-stopped

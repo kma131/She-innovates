@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - Fair-Scan{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Join Fair-Scan</h1>
+            <p>Create your account to get started</p>
+        </div>
+
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    required 
+                    placeholder="your@email.com"
+                    class="form-control"
+                >
+                <small>We'll use this to send you your anonymized resume</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    required 
+                    placeholder="At least 8 characters"
+                    class="form-control"
+                    minlength="8"
+                >
+                <small>Must be at least 8 characters long</small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input 
+                    type="password" 
+                    id="confirm_password" 
+                    name="confirm_password" 
+                    required 
+                    placeholder="••••••••"
+                    class="form-control"
+                    minlength="8"
+                >
+            </div>
+
+            <div class="form-group checkbox">
+                <input type="checkbox" id="agree" required>
+                <label for="agree">I agree that Fair-Scan should anonymize my resumes and send results via email</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
