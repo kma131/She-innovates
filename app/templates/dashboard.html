@@ -21,12 +21,19 @@
                         </span>
                     </div>
                     
-                    <div class="resume-card-body">
+                    <a href="{{ url_for('main.view_resume', resume_id=resume.id) }}" class="resume-card-body-link">
+                        <div class="resume-card-body">
                         <p class="resume-date">
                             <strong>Uploaded:</strong> {{ resume.uploaded_at.strftime('%B %d, %Y at %I:%M %p') }}
                         </p>
                         
-                        {% if resume.extracted_skills %}
+                        {% if resume.anonymized_text %}
+                            <div class="anonymized-preview">
+                                <strong>Anonymized Preview:</strong>
+                                <p>{{ resume.anonymized_text[:240] }}{% if resume.anonymized_text|length > 240 %}...{% endif %}</p>
+                                <small>Click to view full resume (original & anonymized)</small>
+                            </div>
+                        {% elif resume.extracted_skills %}
                             <div class="skills-preview">
                                 <strong>Skills Found:</strong>
                                 <div class="skill-tags">
@@ -39,6 +46,8 @@
                                 </div>
                             </div>
                         {% endif %}
+                        </div>
+                    </a>
                     </div>
                     
                     <div class="resume-card-footer">

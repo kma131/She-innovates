@@ -109,68 +109,68 @@ def dashboard():
 def upload():
     """Resume upload and processing"""
     if request.method == 'POST':
-        # Check if file is in request
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-        
-        file = request.files['file']
-        
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        if not allowed_file(file.filename):
-            return jsonify({'error': 'Only PDF files are allowed'}), 400
-        
-        try:
-            # Secure filename and save
-            filename = secure_filename(file.filename)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-            filename = timestamp + filename
-            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            
-            # Extract text from PDF
-            resume_text = extract_text_from_pdf(filepath)
-            
-            # Anonymize using Gemini
-            result = anonymize_resume(resume_text)
-            
-            # Save to database
-            resume = Resume(
-                user_id=current_user.id,
-                original_filename=file.filename,
-                original_text=resume_text,
-                anonymized_text=result.get('anonymized_resume', ''),
-                extracted_skills={
-                    'technical': result.get('technical_skills', []),
-                    'soft': result.get('soft_skills', [])
-                },
-                highlighted_experience={
-                    'years_experience': result.get('years_experience', ''),
-                    'job_titles': result.get('job_titles', []),
-                    'key_achievements': result.get('key_achievements', [])
-                },
-                processing_status='completed'
-            )
-            db.session.add(resume)
-            db.session.commit()
-            
-            # Send email with results
-            send_results_email(
-                current_user.email,
-                result.get('anonymized_resume', ''),
-                resume.extracted_skills,
-                result.get('key_achievements', [])
-            )
-            
-            return jsonify({
-                'success': True,
-                'message': 'Resume processed successfully! Check your email for results.',
-                'resume_id': resume.id
-            })
-        
-        except Exception as e:
-            return jsonify({'error': f'Processing error: {str(e)}'}), 500
+        # Support multiple files: use getlist to collect all uploaded files
+        files = request.files.getlist('file')
+        if not files or len(files) == 0:
+            return jsonify({'error': 'No files provided'}), 400
+
+        processed = []
+        errors = []
+
+        for file in files:
+            if not file:
+                errors.append({'filename': None, 'error': 'Empty file input'})
+                continue
+            if file.filename == '':
+                errors.append({'filename': None, 'error': 'No filename provided'})
+                continue
+            if not allowed_file(file.filename):
+                errors.append({'filename': file.filename, 'error': 'Only PDF files are allowed'})
+                continue
+
+            try:
+                # Secure filename and save
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f_')
+                filename = timestamp + filename
+                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+
+                # Extract text from PDF
+                resume_text = extract_text_from_pdf(filepath)
+
+                # Anonymize using Gemini (may fallback locally)
+                result = anonymize_resume(resume_text)
+
+                # Save to database
+                resume = Resume(
+                    user_id=current_user.id,
+                    original_filename=file.filename,
+                    original_text=resume_text,
+                    anonymized_text=result.get('anonymized_resume', ''),
+                    extracted_skills={
+                        'technical': result.get('technical_skills', []),
+                        'soft': result.get('soft_skills', [])
+                    },
+                    highlighted_experience={
+                        'years_experience': result.get('years_experience', ''),
+                        'job_titles': result.get('job_titles', []),
+                        'key_achievements': result.get('key_achievements', [])
+                    },
+                    processing_status='completed'
+                )
+                db.session.add(resume)
+                db.session.commit()
+
+                processed.append({'filename': file.filename, 'resume_id': resume.id})
+            except Exception as e:
+                db.session.rollback()
+                errors.append({'filename': getattr(file, 'filename', None), 'error': str(e)})
+
+        resp = {'success': True, 'processed': processed}
+        if errors:
+            resp['errors'] = errors
+        return jsonify(resp)
     
     return render_template('upload.html')
 

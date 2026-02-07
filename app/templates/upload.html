@@ -24,19 +24,14 @@
                         name="file" 
                         accept=".pdf" 
                         required
+                        multiple
                         class="file-input"
                     >
                 </div>
 
                 <div id="filePreview" class="file-preview hidden">
-                    <div class="file-preview-item">
-                        <span class="file-icon">📄</span>
-                        <div class="file-info">
-                            <p id="fileName" class="file-name"></p>
-                            <p id="fileSize" class="file-size"></p>
-                        </div>
-                        <button type="button" class="btn-remove" onclick="resetForm()">×</button>
-                    </div>
+                    <div id="fileList"></div>
+                    <button type="button" class="btn-remove" onclick="resetForm()">×</button>
                 </div>
 
                 <div class="form-info">
@@ -44,7 +39,7 @@
                     <ul>
                         <li>File must be in PDF format</li>
                         <li>Maximum file size: 10 MB</li>
-                        <li>Results will be emailed to: <strong>{{ current_user.email }}</strong></li>
+                        <li>Results will be available in your <a href="{{ url_for('main.dashboard') }}">dashboard</a></li>
                     </ul>
                 </div>
 
@@ -109,11 +104,21 @@ fileInputWrapper.addEventListener('drop', (e) => {
 fileInput.addEventListener('change', updateFilePreview);
 
 function updateFilePreview() {
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = '';
     if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        document.getElementById('fileName').textContent = file.name;
-        document.getElementById('fileSize').textContent = 
-            (file.size / 1024 / 1024).toFixed(2) + ' MB';
+        for (let i = 0; i < fileInput.files.length; i++) {
+            const f = fileInput.files[i];
+            const item = document.createElement('div');
+            item.className = 'file-preview-item';
+            item.innerHTML = `\
+                <span class="file-icon">📄</span>\
+                <div class="file-info">\
+                    <p class="file-name">${f.name}</p>\
+                    <p class="file-size">${(f.size / 1024 / 1024).toFixed(2)} MB</p>\
+                </div>`;
+            fileList.appendChild(item);
+        }
         fileInputWrapper.classList.add('hidden');
         filePreview.classList.remove('hidden');
     }
@@ -135,7 +140,9 @@ uploadForm.addEventListener('submit', async (e) => {
     }
 
     const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
+    for (let i = 0; i < fileInput.files.length; i++) {
+        formData.append('file', fileInput.files[i]);
+    }
 
     // Show processing indicator
     submitBtn.disabled = true;
@@ -150,10 +157,17 @@ uploadForm.addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (response.ok) {
-            showSuccess(data.message);
-            setTimeout(() => {
-                window.location.href = '{{ url_for("main.dashboard") }}';
-            }, 2000);
+            showSuccess(data.message || 'Processed successfully');
+            // If a single resume processed, redirect to its details; otherwise go to dashboard
+            if (data.processed && data.processed.length === 1) {
+                setTimeout(() => {
+                    window.location.href = `/resume/${data.processed[0].resume_id}`;
+                }, 1000);
+            } else {
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("main.dashboard") }}';
+                }, 1000);
+            }
         } else {
             showError(data.error || 'An error occurred');
             submitBtn.disabled = false;
