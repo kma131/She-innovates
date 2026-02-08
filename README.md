@@ -45,7 +45,7 @@ Fair-Scan features a modern, professional design focused on **trust, fairness, a
 ### 1. Clone/Download the Repository
 
 ```bash
-cd fair-scan
+cd She-Innovates
 ```
 
 ### 2. Create Virtual Environment
@@ -80,10 +80,6 @@ Edit `.env` with:
 FLASK_ENV=development
 SECRET_KEY=generate-a-secure-random-key-here
 
-# Email Configuration
-MAIL_USERNAME=your-gmail@gmail.com
-MAIL_PASSWORD=your-gmail-app-password
-
 # Gemini API Key
 GEMINI_API_KEY=your-api-key-from-google
 ```
@@ -94,11 +90,7 @@ GEMINI_API_KEY=your-api-key-from-google
 3. Create a new API key
 4. Copy it to your `.env` file
 
-#### Setting Up Gmail App Password:
-1. Enable 2-Factor Authentication on your Google Account
-2. Go to [Google Account Security](https://myaccount.google.com/security)
-3. Create an "App password" for Mail
-4. Use that unique 16-character password in `MAIL_PASSWORD`
+
 
 ### 5. Initialize Database
 
